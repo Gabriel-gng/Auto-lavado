@@ -128,6 +128,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+    # Fallback for platforms where collectstatic output is not present at runtime.
+    WHITENOISE_USE_FINDERS = True
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
