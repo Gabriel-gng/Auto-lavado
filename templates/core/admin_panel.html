@@ -1,0 +1,174 @@
+{% extends 'core/base.html' %}
+{% block title %}Panel de Administración - AutoLavado{% endblock %}
+
+{% block content %}
+<!-- Admin Navbar -->
+<nav class="admin-navbar d-flex justify-content-between align-items-center">
+    <div class="brand">
+        <div class="brand-icon">
+            <i class="bi bi-car-front-fill"></i>
+        </div>
+        <div>
+            <h5>Panel de Administración</h5>
+            <small>Turbo Wash</small>
+        </div>
+    </div>
+    <a href="{% url 'logout' %}" class="logout-btn">
+        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+    </a>
+</nav>
+
+<div class="container-fluid" style="max-width: 1300px; padding: 24px;">
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Total Recaudado</span>
+                    <span class="stat-icon"><i class="bi bi-currency-dollar"></i></span>
+                </div>
+                <div class="stat-value">${{ total_recaudado|floatformat:0 }}</div>
+                <div class="stat-sub">{% if filtro == 'hoy' %}Hoy{% elif filtro == 'mes' %}Este Mes{% elif filtro == 'rango' %}Rango personalizado{% endif %}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Total de Ventas</span>
+                    <span class="stat-icon"><i class="bi bi-graph-up"></i></span>
+                </div>
+                <div class="stat-value">{{ total_ventas }}</div>
+                <div class="stat-sub">Servicios realizados</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Promedio por Venta</span>
+                    <span class="stat-icon"><i class="bi bi-calendar3"></i></span>
+                </div>
+                <div class="stat-value">${{ promedio|floatformat:0 }}</div>
+                <div class="stat-sub">Por servicio</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Table -->
+    <div class="section-card">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h2 style="font-size: 20px;">Registro de Ventas</h2>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <select class="filter-select" id="filtro-select" onchange="applyFilter()">
+                    <option value="hoy" {% if filtro == 'hoy' %}selected{% endif %}>Hoy</option>
+                    <option value="mes" {% if filtro == 'mes' %}selected{% endif %}>Este Mes</option>
+                    <option value="rango" {% if filtro == 'rango' %}selected{% endif %}>Rango de Fechas</option>
+                </select>
+                <a href="#" id="export-link" class="btn-export">
+                    <i class="bi bi-download"></i> Exportar
+                </a>
+            </div>
+        </div>
+
+        <!-- Date range picker -->
+        <div id="rango-fechas" class="mb-3" style="display: {% if filtro == 'rango' %}flex{% else %}none{% endif %}; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div class="d-flex align-items-center gap-2">
+                <label for="fecha_desde" style="font-weight: 600; font-size: 14px; white-space: nowrap;">Desde:</label>
+                <input type="date" id="fecha_desde" class="form-control" style="max-width: 180px;" value="{{ fecha_desde }}">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label for="fecha_hasta" style="font-weight: 600; font-size: 14px; white-space: nowrap;">Hasta:</label>
+                <input type="date" id="fecha_hasta" class="form-control" style="max-width: 180px;" value="{{ fecha_hasta }}">
+            </div>
+            <button class="btn-export" onclick="applyRangeFilter()" style="white-space: nowrap;">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="sales-table">
+                <thead>
+                    <tr>
+                        <th>Factura</th>
+                        <th>Fecha/Hora</th>
+                        <th>Cliente</th>
+                        <th>Vehículo</th>
+                        <th>Servicio</th>
+                        <th>Pago</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes %}
+                    <tr>
+                        <td><span class="invoice-link">{{ orden.numero_factura }}</span></td>
+                        <td>{{ orden.fecha_creacion|date:"d/m/Y" }}<br><small>{{ orden.fecha_creacion|time:"H:i" }}</small></td>
+                        <td>{{ orden.usuario.perfil.nombre_completo|default:orden.usuario.username }}</td>
+                        <td><strong>{{ orden.vehiculo.placa }}</strong></td>
+                        <td>{{ orden.servicio.nombre }}</td>
+                        <td>
+                            <span class="badge-pago {% if orden.metodo_pago == 'Efectivo' %}efectivo{% elif orden.metodo_pago == 'Tarjeta' %}tarjeta{% else %}transferencia{% endif %}">
+                                {{ orden.metodo_pago }}
+                            </span>
+                        </td>
+                        <td class="text-end" style="font-weight: 600; color: var(--primary);">${{ orden.total|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4" style="color: var(--gray-500);">No hay ventas registradas para este período.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if ordenes %}
+        <div class="text-end mt-3 total-row">
+            Total Recaudado: <span class="total-amount ms-3">${{ total_recaudado|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilter() {
+    const filtro = document.getElementById('filtro-select').value;
+    const rangoDiv = document.getElementById('rango-fechas');
+
+    if (filtro === 'rango') {
+        rangoDiv.style.display = 'flex';
+        return;
+    }
+
+    window.location.href = '{% url "admin_panel" %}?filtro=' + filtro;
+}
+
+function applyRangeFilter() {
+    const desde = document.getElementById('fecha_desde').value;
+    const hasta = document.getElementById('fecha_hasta').value;
+    let url = '{% url "admin_panel" %}?filtro=rango';
+    if (desde) url += '&fecha_desde=' + desde;
+    if (hasta) url += '&fecha_hasta=' + hasta;
+    window.location.href = url;
+}
+
+function updateExportLink() {
+    const filtro = document.getElementById('filtro-select').value;
+    let url = '{% url "exportar_ventas" %}?filtro=' + filtro;
+    if (filtro === 'rango') {
+        const desde = document.getElementById('fecha_desde').value;
+        const hasta = document.getElementById('fecha_hasta').value;
+        if (desde) url += '&fecha_desde=' + desde;
+        if (hasta) url += '&fecha_hasta=' + hasta;
+    }
+    document.getElementById('export-link').href = url;
+}
+
+// Update export link on load and on changes
+updateExportLink();
+document.getElementById('filtro-select').addEventListener('change', updateExportLink);
+document.getElementById('fecha_desde').addEventListener('change', updateExportLink);
+document.getElementById('fecha_hasta').addEventListener('change', updateExportLink);
+</script>
+{% endblock %}

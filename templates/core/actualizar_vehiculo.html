@@ -1,0 +1,79 @@
+{% extends 'core/base.html' %}
+{% block title %}Actualizar Vehículo - Turbo Wash{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 520px;">
+        <a href="{% url 'dashboard' %}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+
+        <div class="icon-circle">
+            <i class="bi bi-pencil-square"></i>
+        </div>
+        <h1>Actualizar Vehículo</h1>
+        <p class="text-center" style="color: var(--gray-500); margin-top: -16px; margin-bottom: 24px;">
+            Modifica los datos de tu vehículo
+        </p>
+
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <p class="mb-0"><strong>{{ field.label }}:</strong> {{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_tipo">Tipo de Vehículo</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-truck input-icon"></i>
+                    <select name="tipo" id="id_tipo" class="form-control with-icon" required>
+                        <option value="">Ej: Carro, Moto...</option>
+                        <option value="Moto" {% if form.tipo.value == 'Moto' %}selected{% endif %}>Moto</option>
+                        <option value="Carro" {% if form.tipo.value == 'Carro' %}selected{% endif %}>Carro</option>
+                        <option value="Camioneta" {% if form.tipo.value == 'Camioneta' %}selected{% endif %}>Camioneta</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="id_placa">Placa</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-upc input-icon"></i>
+                    <input type="text" name="placa" id="id_placa" class="form-control with-icon"
+                           placeholder="ABC123 o ABC12D" value="{{ form.placa.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="id_marca">Marca</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-building input-icon"></i>
+                    <input type="text" name="marca" id="id_marca" class="form-control with-icon"
+                           placeholder="Chevrolet" value="{{ form.marca.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="id_modelo">Modelo</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-car-front input-icon"></i>
+                    <input type="text" name="modelo" id="id_modelo" class="form-control with-icon"
+                           placeholder="Sedan" value="{{ form.modelo.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="id_color">Color</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-palette-fill input-icon"></i>
+                    <input type="text" name="color" id="id_color" class="form-control with-icon"
+                           placeholder="Rojo" value="{{ form.color.value|default:'' }}" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary-custom">Actualizar Vehículo</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends 'core/base.html' %}
+{% block title %}Panel de Usuario - AutoLavado{% endblock %}
+
+{% block content %}
+<!-- Navbar -->
+<nav class="navbar-custom d-flex justify-content-between align-items-center">
+    <a href="{% url 'dashboard' %}" class="brand">
+        <div class="brand-icon">
+            <i class="bi bi-car-front-fill"></i>
+        </div>
+        <div class="brand-text">
+            <h5>Turbo Wash</h5>
+            <small>Panel de Usuario</small>
+        </div>
+    </a>
+    <div class="navbar-actions">
+        <a href="{% url 'perfil' %}" class="user-link">
+            <i class="bi bi-person-circle"></i>
+            {{ request.user.perfil.nombre_completo|default:request.user.username }}
+        </a>
+        <a href="{% url 'logout' %}" class="logout-link">
+            <i class="bi bi-box-arrow-right"></i> Salir
+        </a>
+    </div>
+</nav>
+
+<div class="container-fluid" style="max-width: 1200px; padding: 24px;">
+    <!-- Active order alert -->
+    {% if orden_activa %}
+    <div class="alert alert-info d-flex align-items-center justify-content-between" role="alert">
+        <div>
+            <i class="bi bi-clock-history me-2"></i>
+            <strong>Lavado en progreso:</strong> {{ orden_activa.vehiculo.placa }} - {{ orden_activa.servicio.nombre }}
+        </div>
+        <a href="{% url 'timer' orden_activa.id %}" class="btn btn-primary btn-sm">Ver progreso</a>
+    </div>
+    {% endif %}
+
+    <!-- Vehicles Section -->
+    <div class="section-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Mis Vehículos</h2>
+            <a href="{% url 'registrar_vehiculo' %}" class="btn-register-vehicle">
+                <i class="bi bi-plus-lg"></i> Registrar Vehículo
+            </a>
+        </div>
+        <div class="row g-3">
+            {% for vehiculo in vehiculos %}
+            <div class="col-md-4 col-sm-6">
+                <div class="vehicle-card {% if vehiculo.id in vehiculos_en_lavado %}in-wash{% endif %} {% if selected_vehiculo_id == vehiculo.id %}selected{% endif %}"
+                     data-vehiculo-id="{{ vehiculo.id }}"
+                     data-vehiculo-tipo="{{ vehiculo.tipo }}"
+                     data-en-lavado="{% if vehiculo.id in vehiculos_en_lavado %}true{% else %}false{% endif %}"
+                     onclick="selectVehicle(this)">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="bi {% if vehiculo.tipo == 'Moto' %}bi-bicycle{% else %}bi-car-front-fill{% endif %}"
+                               style="font-size: 28px; color: var(--primary);"></i>
+                            <div>
+                                <div class="plate">{{ vehiculo.placa }}</div>
+                                <div class="type-badge">{{ vehiculo.tipo }}</div>
+                                <div class="details mt-1">
+                                    {{ vehiculo.marca }} {{ vehiculo.modelo }}<br>
+                                    Color: {{ vehiculo.color }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="vehicle-actions">
+                            <a href="{% url 'actualizar_vehiculo' vehiculo.id %}" class="btn-vehicle-action btn-vehicle-update" onclick="event.stopPropagation();">
+                                <i class="bi bi-pencil-square"></i> Actualizar
+                            </a>
+                            <form method="post" action="{% url 'eliminar_vehiculo' vehiculo.id %}" onsubmit="event.stopPropagation(); return confirm('¿Estás seguro de eliminar este vehículo?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-vehicle-action btn-vehicle-delete" onclick="event.stopPropagation();">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">No tienes vehículos registrados.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bays Section -->
+    {% if bahias %}
+    <div class="section-card">
+        <h2 class="mb-3">Bahías Disponibles</h2>
+        <div class="d-flex flex-wrap gap-3">
+            {% for bahia in bahias %}
+            <div class="bay-card {% if bahia.ocupada %}occupied{% else %}available{% endif %}"
+                 data-bahia-id="{{ bahia.id }}"
+                 data-bahia-tipo="{{ bahia.tipo }}"
+                     {% if not bahia.ocupada and not tiene_orden_activa %}onclick="selectBay(this)"{% endif %}>
+                <div class="bay-icon">
+                    <i class="bi bi-water"></i>
+                </div>
+                <div class="bay-name">Bahía {{ bahia.numero }}</div>
+                <div class="bay-status">
+                    {% if bahia.ocupada %}Ocupada{% else %}Disponible{% endif %}
+                </div>
+                <div class="bay-type-label">{{ bahia.tipo }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <p id="instruction-text" class="text-center text-muted mt-3">
+            Selecciona un vehículo para iniciar el proceso de lavado
+        </p>
+
+        <div class="text-center mt-3" id="start-btn-container" style="display:none;">
+            <a href="#" id="start-service-btn" class="btn btn-primary-custom" style="max-width: 400px; display: inline-block;">
+                Iniciar Servicio
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedVehicleId = null;
+let selectedVehicleType = null;
+let selectedBayId = null;
+
+function selectVehicle(el) {
+    {% if tiene_orden_activa %}
+        alert('Ya tienes un vehículo en lavado. Debes esperar a que termine antes de iniciar otro servicio.');
+        return;
+    {% endif %}
+    if (el.dataset.enLavado === 'true') {
+        alert('Este vehículo ya está en lavado.');
+        return;
+    }
+    document.querySelectorAll('.vehicle-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedVehicleId = el.dataset.vehiculoId;
+    selectedVehicleType = el.dataset.vehiculoTipo;
+
+    // Filter bays based on vehicle type
+    const bayCards = document.querySelectorAll('.bay-card');
+    bayCards.forEach(bay => {
+        const bayType = bay.dataset.bahiaTipo;
+        if (selectedVehicleType === 'Moto') {
+            bay.style.display = bayType === 'Moto' ? '' : 'none';
+        } else {
+            bay.style.display = bayType === 'Carro' ? '' : 'none';
+        }
+    });
+
+    // Reset bay selection
+    selectedBayId = null;
+    bayCards.forEach(c => c.classList.remove('selected-bay'));
+    document.getElementById('start-btn-container').style.display = 'none';
+    document.getElementById('instruction-text').textContent = 'Selecciona una bahía disponible';
+}
+
+function selectBay(el) {
+    if (!selectedVehicleId) {
+        alert('Primero selecciona un vehículo');
+        return;
+    }
+    if (el.classList.contains('occupied')) return;
+
+    document.querySelectorAll('.bay-card').forEach(c => c.classList.remove('selected-bay'));
+    el.classList.add('selected-bay');
+    selectedBayId = el.dataset.bahiaId;
+
+    document.getElementById('instruction-text').style.display = 'none';
+    document.getElementById('start-btn-container').style.display = 'block';
+    document.getElementById('start-service-btn').href =
+        '/servicio/' + selectedVehicleId + '/' + selectedBayId + '/';
+}
+</script>
+{% endblock %}

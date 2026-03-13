@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block title %}Iniciar Sesión - Turbo Wash{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="icon-circle">
+            <i class="bi bi-car-front-fill"></i>
+        </div>
+        <h1>Turbo Wash</h1>
+
+        {% if error %}
+        <div class="alert alert-danger text-center" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="id_username">Correo Electrónico</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-envelope-fill input-icon"></i>
+                    <input type="text" name="username" id="id_username" class="form-control form-control-lg with-icon"
+                           placeholder="ejemplo@correo.com" value="{{ form.username.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="id_password">Contraseña</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-lock-fill input-icon"></i>
+                    <input type="password" name="password" id="id_password" class="form-control form-control-lg with-icon"
+                           placeholder="••••••••" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary-custom">Iniciar Sesión</button>
+        </form>
+
+        <p class="text-center mt-4 mb-0" style="color: var(--gray-500);">
+            ¿No tienes cuenta? <a href="{% url 'registro' %}" class="link-primary-custom">Regístrate aquí</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

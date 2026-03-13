@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+{% block title %}Factura - AutoLavado{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="invoice-card">
+        <div class="success-icon">
+            <i class="bi bi-check-lg"></i>
+        </div>
+        <h2 class="text-center mb-1" style="font-weight: 700;">¡Pago Exitoso!</h2>
+        <p class="text-center" style="color: var(--gray-500);">Tu transacción ha sido procesada correctamente</p>
+
+        <div class="factura-box">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h4>FACTURA</h4>
+                <span class="factura-number">{{ orden.numero_factura }}</span>
+            </div>
+
+            <h6 class="mb-2" style="font-weight: 700;">Datos del Cliente</h6>
+            <div class="row mb-1" style="font-size: 14px;">
+                <div class="col-6"><span style="color: var(--gray-500);">Vehículo:</span> {{ orden.vehiculo.placa }}</div>
+                <div class="col-6"><span style="color: var(--gray-500);">Tipo:</span> {{ orden.vehiculo.tipo }}</div>
+            </div>
+            <div class="row mb-3" style="font-size: 14px;">
+                <div class="col-6"><span style="color: var(--gray-500);">Marca:</span> {{ orden.vehiculo.marca }}</div>
+                <div class="col-6"><span style="color: var(--gray-500);">Modelo:</span> {{ orden.vehiculo.modelo }}</div>
+            </div>
+
+            <h6 class="mb-2" style="font-weight: 700;">Detalles del Servicio</h6>
+            <table class="factura-table">
+                <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Duración</th>
+                        <th class="text-end">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ orden.servicio.nombre }}</td>
+                        <td>{{ orden.servicio.duracion_minutos }} min</td>
+                        <td class="text-end">${{ orden.total|floatformat:0 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <hr>
+            <div class="row mb-1" style="font-size: 14px;">
+                <div class="col-6" style="color: var(--gray-500);">Método de Pago:</div>
+                <div class="col-6 text-end" style="font-weight: 600;">{{ orden.metodo_pago }}</div>
+            </div>
+            <div class="row">
+                <div class="col-6 total-label">Total Pagado:</div>
+                <div class="col-6 text-end total-value">${{ orden.total|floatformat:0 }}</div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-4 justify-content-center flex-wrap">
+            <button onclick="window.print()" class="btn-download">
+                <i class="bi bi-download"></i> Descargar Factura
+            </button>
+        </div>
+
+        <!-- Contador de llegada del vehículo -->
+        <div class="arrival-timer-section mt-4 text-center">
+            <div style="background: #f0f4ff; border-radius: 16px; padding: 24px;">
+                <h5 style="font-weight: 700; margin-bottom: 4px;">Tiempo de llegada</h5>
+                <p style="color: var(--gray-500); font-size: 14px; margin-bottom: 16px;">Tienes 5 minutos para llevar tu vehículo a la bahía</p>
+                <div id="arrival-timer" style="font-size: 48px; font-weight: 700; color: var(--primary); letter-spacing: 2px;">05:00</div>
+                <p id="arrival-label" style="color: var(--gray-500); font-size: 13px; margin-top: 4px;">Esperando llegada...</p>
+                <a href="{% url 'timer' orden.id %}" class="btn-start-wash mt-3" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-play-fill"></i> Continuar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const ARRIVAL_SECONDS = 5 * 60;
+    const timerUrl = "{% url 'timer' orden.id %}";
+    const storageKey = 'arrival_timer_' + {{ orden.id }};
+
+    // Get or set the end time
+    let endTime = localStorage.getItem(storageKey);
+    if (!endTime) {
+        endTime = Date.now() + ARRIVAL_SECONDS * 1000;
+        localStorage.setItem(storageKey, endTime);
+    } else {
+        endTime = parseInt(endTime);
+    }
+
+    const display = document.getElementById('arrival-timer');
+    const label = document.getElementById('arrival-label');
+
+    function updateArrivalTimer() {
+        const now = Date.now();
+        const diff = endTime - now;
+
+        if (diff <= 0) {
+            display.textContent = '00:00';
+            label.textContent = '¡Tiempo agotado! Redirigiendo...';
+            localStorage.removeItem(storageKey);
+            setTimeout(function() { window.location.href = timerUrl; }, 1000);
+            return;
+        }
+
+        const totalSec = Math.floor(diff / 1000);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        display.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+
+        requestAnimationFrame(function() { setTimeout(updateArrivalTimer, 500); });
+    }
+
+    updateArrivalTimer();
+})();
+</script>
+{% endblock %}

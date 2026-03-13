@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+{% block title %}Pago del Servicio - AutoLavado{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 900px; padding: 24px;">
+    <a href="{% url 'seleccionar_servicio' vehiculo.id bahia.id %}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+
+    <div class="section-card">
+        <h1 class="text-center mb-1" style="font-size: 32px; font-weight: 700;">Pago del Servicio</h1>
+        <p class="text-center mb-4" style="color: var(--gray-500);">Confirma tu información y selecciona el método de pago</p>
+
+        <!-- Service Summary -->
+        <div class="summary-box mb-4">
+            <h5 class="mb-3" style="font-weight: 700;">Resumen del Servicio</h5>
+            <div class="row mb-2">
+                <div class="col-4" style="color: var(--gray-500);">Vehículo:</div>
+                <div class="col-8 text-end" style="font-weight: 600;">{{ vehiculo.placa }} ({{ vehiculo.tipo }})</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-4" style="color: var(--gray-500);">Servicio:</div>
+                <div class="col-8 text-end" style="font-weight: 600;">{{ servicio.nombre }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-4" style="color: var(--gray-500);">Duración:</div>
+                <div class="col-8 text-end" style="font-weight: 600;">{{ servicio.duracion_minutos }} min</div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6 total-label">Total a Pagar:</div>
+                <div class="col-6 text-end total-value">${{ servicio.precio|floatformat:0 }}</div>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <h5 class="mb-3" style="font-weight: 700;">Método de Pago</h5>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="payment-method" data-method="Efectivo" onclick="selectPayment(this)">
+                    <div class="pay-icon">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <h6>Efectivo</h6>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="payment-method" data-method="Tarjeta" onclick="selectPayment(this)">
+                    <div class="pay-icon">
+                        <i class="bi bi-credit-card-fill"></i>
+                    </div>
+                    <h6>Tarjeta</h6>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="payment-method" data-method="Transferencia" onclick="selectPayment(this)">
+                    <div class="pay-icon">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <h6>Transferencia</h6>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" id="payment-form">
+            {% csrf_token %}
+            <input type="hidden" name="metodo_pago" id="metodo_pago" value="">
+            <button type="submit" id="pay-btn" class="btn btn-pay" disabled>
+                Selecciona un Método de Pago
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectPayment(el) {
+    document.querySelectorAll('.payment-method').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const method = el.dataset.method;
+    document.getElementById('metodo_pago').value = method;
+
+    const btn = document.getElementById('pay-btn');
+    btn.disabled = false;
+    btn.classList.add('active');
+    btn.textContent = 'Pagar ${{ servicio.precio|floatformat:0 }}';
+}
+</script>
+{% endblock %}

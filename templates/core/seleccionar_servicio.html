@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+{% block title %}Selección de Servicio - AutoLavado{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1200px; padding: 24px;">
+    <a href="{% url 'dashboard' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Volver al Panel
+    </a>
+
+    <div class="section-card">
+        <h1 class="text-center mb-1" style="font-size: 32px; font-weight: 700;">Selección de Servicio</h1>
+        <p class="text-center mb-4" style="color: var(--gray-500);">Elige el tipo de lavado para tu vehículo</p>
+
+        <div class="row g-4 justify-content-center">
+            {% for servicio in servicios %}
+            <div class="col-lg-3 col-md-6">
+                <div class="service-card" data-servicio-id="{{ servicio.id }}" onclick="selectService(this)">
+                    <div class="service-icon">
+                        <i class="bi {{ servicio.icono }}"></i>
+                    </div>
+                    <h5>{{ servicio.nombre }}</h5>
+                    <p class="service-desc">{{ servicio.descripcion }}</p>
+                    <div class="service-time">
+                        <i class="bi bi-clock"></i> {{ servicio.duracion_minutos }} min
+                    </div>
+                    <div class="service-price">
+                        ${{ servicio.precio|floatformat:0 }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="#" id="select-service-btn" class="btn btn-pay" style="max-width: 600px; display: inline-block; width: 100%;">
+                Selecciona un Servicio
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedServiceId = null;
+
+function selectService(el) {
+    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedServiceId = el.dataset.servicioId;
+
+    const btn = document.getElementById('select-service-btn');
+    btn.classList.add('active');
+    btn.textContent = 'Continuar al Pago';
+    btn.style.cursor = 'pointer';
+    btn.href = '/pago/{{ vehiculo.id }}/{{ bahia.id }}/' + selectedServiceId + '/';
+}
+</script>
+{% endblock %}

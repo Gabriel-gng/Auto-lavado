@@ -1,0 +1,71 @@
+{% extends 'core/base.html' %}
+{% block title %}Actualizar Perfil - Turbo Wash{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 520px;">
+        <a href="{% url 'perfil' %}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+
+        <div class="icon-circle">
+            <i class="bi bi-pencil-square"></i>
+        </div>
+        <h1>Actualizar Perfil</h1>
+        <p class="text-center" style="color: var(--gray-500); margin-top: -16px; margin-bottom: 24px;">
+            Modifica tu información personal
+        </p>
+
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <p class="mb-0"><strong>{{ field.label }}:</strong> {{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_nombre_completo">Nombre Completo</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-person-fill input-icon"></i>
+                    <input type="text" name="nombre_completo" id="id_nombre_completo" class="form-control with-icon"
+                           placeholder="Juan Pérez" value="{{ form.nombre_completo.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="id_documento_identidad">Documento de Identidad</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-card-text input-icon"></i>
+                    <input type="text" name="documento_identidad" id="id_documento_identidad" class="form-control with-icon"
+                           placeholder="1234567890" value="{{ form.documento_identidad.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="id_telefono">Teléfono (10 dígitos)</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-telephone-fill input-icon"></i>
+                    <input type="tel" name="telefono" id="id_telefono" class="form-control with-icon"
+                           placeholder="3101234567" pattern="[0-9]{10}" maxlength="10" minlength="10"
+                           title="Ingresa exactamente 10 dígitos" value="{{ form.telefono.value|default:'' }}" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="id_email">Correo Electrónico</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-envelope-fill input-icon"></i>
+                    <input type="email" name="email" id="id_email" class="form-control with-icon"
+                           placeholder="ejemplo@correo.com" value="{{ form.email.value|default:'' }}" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary-custom">Guardar Cambios</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
