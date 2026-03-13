@@ -281,8 +281,6 @@ def pago_view(request, vehiculo_id, bahia_id, servicio_id):
             now = timezone.now()
             numero_factura = f"FAC-{now.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
 
-            fecha_inicio = timezone.now()
-            fecha_fin = fecha_inicio + timedelta(minutes=servicio.duracion_minutos)
             orden = OrdenLavado.objects.create(
                 numero_factura=numero_factura,
                 usuario=request.user,
@@ -292,8 +290,10 @@ def pago_view(request, vehiculo_id, bahia_id, servicio_id):
                 metodo_pago=metodo_pago,
                 total=servicio.precio,
                 estado='en_progreso',
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
+                # El tiempo de lavado debe iniciar cuando el usuario entra al timer de lavado,
+                # no cuando termina de pagar (hay un timer de llegada previo e independiente).
+                fecha_inicio=None,
+                fecha_fin=None,
             )
             # Mark bay as occupied
             bahia.ocupada = True
@@ -323,6 +323,14 @@ def factura_view(request, orden_id):
 @login_required
 def timer_view(request, orden_id):
     orden = get_object_or_404(OrdenLavado, id=orden_id, usuario=request.user)
+
+    # Inicia el lavado al abrir esta vista por primera vez.
+    # Esto evita que el timer de llegada descuente tiempo al servicio.
+    if orden.estado == 'en_progreso' and (orden.fecha_inicio is None or orden.fecha_fin is None):
+        fecha_inicio = timezone.now()
+        orden.fecha_inicio = fecha_inicio
+        orden.fecha_fin = fecha_inicio + timedelta(minutes=orden.servicio.duracion_minutos)
+        orden.save(update_fields=['fecha_inicio', 'fecha_fin'])
 
     context = {
         'orden': orden,
